@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/binance/ticker",
+      "destination": "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
+    },
+    {
+      "source": "/api/binance/options/ticker",
+      "destination": "https://eapi.binance.com/eapi/v1/ticker"
+    },
+    {
+      "source": "/api/binance/options/mark",
+      "destination": "https://eapi.binance.com/eapi/v1/mark"
+    },
+    {
+      "source": "/api/binance/options",
+      "destination": "https://eapi.binance.com/eapi/v1/ticker"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
