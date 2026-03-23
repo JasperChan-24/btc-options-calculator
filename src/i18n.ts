@@ -16,6 +16,9 @@ export const t = {
     dte: 'DTE (Days)',
     iv: 'IV (%)',
     premium: 'Premium ($)',
+    premiumBtc: 'Premium (₿)',
+    usdtMode: 'USDT Settled',
+    btcMode: 'BTC Settled',
     qty: 'Qty',
     long: 'Long',
     short: 'Short',
@@ -34,6 +37,7 @@ export const t = {
     currentBtc: 'Current BTC',
     btcChart: 'BTC Chart',
     btcPrice: 'BTC Price',
+    resetZoom: 'Reset View',
     thetaDaily: 'Theta (Daily)',
     optionChain: 'Option Chain (Binance)',
     expiryDate: 'Expiry Date',
@@ -47,17 +51,9 @@ export const t = {
     clickToShort: 'Click to Short',
     spotPosition: 'Spot BTC Position',
     spotAmount: 'BTC Amount',
-    entryPrice: 'Entry Price',
-    walletBalance: 'Wallet Balance (USDT)',
-    marginRequired: 'Margin Required',
-    initialMargin: 'Initial Margin (IM)',
-    maintMargin: 'Maint. Margin (MM)',
-    equity: 'Account Equity',
-    liquidationPrice: 'Est. Liquidation Price',
-    riskLevel: 'Risk Level',
-    safe: 'Safe',
-    warning: 'Warning',
-    danger: 'Danger',
+    entryPrice: 'Entry Price ($)',
+    entryPriceBtc: 'Entry Price (₿)',
+
     strategies: {
       longCall: { name: 'Long Call', desc: 'Bullish. Profit from rising prices.' },
       shortCall: { name: 'Short Call', desc: 'Bearish/Neutral. Profit from falling or stagnant prices. Unlimited risk.' },
@@ -76,7 +72,7 @@ export const t = {
       title: 'User Guide',
       payoffChart: {
         title: 'Payoff Profile',
-        desc: 'Visualizes your strategy\'s profit and loss. The solid line shows PnL at expiration, while the dashed line shows current theoretical PnL based on the "Days Passed" and "IV Adjustment" settings. **Hover over the LIQ (Liquidation) lines to reveal real-time Binance margin requirements and risk metrics.**'
+        desc: 'Visualizes your strategy\'s profit and loss. The solid line shows PnL at expiration, while the dashed line shows current theoretical PnL based on the "Days Passed" and "IV Adjustment" settings.'
       },
       optionChain: {
         title: 'Option Chain',
@@ -115,6 +111,9 @@ export const t = {
     dte: '到期天数',
     iv: '隐含波动率 (%)',
     premium: '权利金成本 ($)',
+    premiumBtc: '权利金成本 (₿)',
+    usdtMode: 'USDT 本位',
+    btcMode: 'BTC 本位',
     qty: '数量',
     long: '做多 (Long)',
     short: '做空 (Short)',
@@ -133,6 +132,7 @@ export const t = {
     currentBtc: '当前 BTC',
     btcChart: 'BTC K线',
     btcPrice: 'BTC 价格',
+    resetZoom: '复位视图',
     thetaDaily: 'Theta (每日)',
     optionChain: '期权链 (Binance)',
     expiryDate: '到期日',
@@ -146,17 +146,9 @@ export const t = {
     clickToShort: '点击做空 (Short)',
     spotPosition: '现货 BTC 持仓',
     spotAmount: 'BTC 数量',
-    entryPrice: '入场价格',
-    walletBalance: '钱包余额 (USDT)',
-    marginRequired: '所需保证金',
-    initialMargin: '初始保证金 (IM)',
-    maintMargin: '维持保证金 (MM)',
-    equity: '账户权益',
-    liquidationPrice: '预计强平价格',
-    riskLevel: '风险等级',
-    safe: '安全',
-    warning: '警告',
-    danger: '危险',
+    entryPrice: '入场价格 ($)',
+    entryPriceBtc: '入场价格 (₿)',
+
     strategies: {
       longCall: { name: '买入看涨 (Long Call)', desc: '看涨。从价格上涨中获利。' },
       shortCall: { name: '卖出看涨 (Short Call)', desc: '偏空/中性。从价格下跌或盘整中获利。风险无限。' },
@@ -175,7 +167,7 @@ export const t = {
       title: '使用教程',
       payoffChart: {
         title: '收益图表',
-        desc: '可视化策略的盈亏情况。实线表示到期时的盈亏，虚线表示基于“经过天数”和“IV 调整”设置的当前理论盈亏。**将鼠标悬停在 LIQ（强平）虚线上，即可实时显示基于币安规则的保证金要求和风控指标。**'
+        desc: '可视化策略的盈亏情况。实线表示到期时的盈亏，虚线表示基于“经过天数”和“IV 调整”设置的当前理论盈亏。'
       },
       optionChain: {
         title: '期权链',

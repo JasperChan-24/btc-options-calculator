@@ -1,15 +1,16 @@
 import React from 'react';
-import { OptionLeg, OptionType, PositionType } from '../utils/blackScholes';
+import { OptionLeg, OptionType, PositionType, Denomination } from '../utils/blackScholes';
 import { Trash2, Plus, Settings2 } from 'lucide-react';
 import { Lang, t } from '../i18n';
 
 interface OptionLegEditorProps {
   legs: OptionLeg[];
   onChange: (legs: OptionLeg[]) => void;
+  denomination: Denomination;
   lang: Lang;
 }
 
-export const OptionLegEditor: React.FC<OptionLegEditorProps> = ({ legs, onChange, lang }) => {
+export const OptionLegEditor: React.FC<OptionLegEditorProps> = ({ legs, onChange, denomination, lang }) => {
   const addLeg = () => {
     const newLeg: OptionLeg = {
       id: Math.random().toString(36).substr(2, 9),
@@ -105,7 +106,7 @@ export const OptionLegEditor: React.FC<OptionLegEditorProps> = ({ legs, onChange
             </div>
 
             <div className="w-full">
-              <label className="block text-xs text-gray-400 mb-1">{t[lang].premium}</label>
+              <label className="block text-xs text-gray-400 mb-1">{denomination === 'BTC' ? t[lang].premiumBtc : t[lang].premium}</label>
               <input
                 type="number"
                 value={leg.premium}

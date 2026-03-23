@@ -1,67 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import {
-  ComposedChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-
-interface KlineData {
-  time: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
-
-const Candlestick = (props: any) => {
-  const { x, y, width, height, payload } = props;
-  const isUp = payload.close >= payload.open;
-  const color = isUp ? '#10b981' : '#f43f5e'; // emerald-500 : rose-500
-
-  // Fallback to ratio calculation if yAxis scale is not accessible
-  const ratio = height / Math.max(Math.abs(payload.close - payload.open), 0.001);
-  const highY = y - (payload.high - Math.max(payload.open, payload.close)) * ratio;
-  const lowY = y + height + (Math.min(payload.open, payload.close) - payload.low) * ratio;
-
-  return (
-    <g stroke={color} fill={color}>
-      <line x1={x + width / 2} y1={highY} x2={x + width / 2} y2={lowY} strokeWidth={1} />
-      <rect x={x} y={y} width={width} height={Math.max(height, 1)} />
-    </g>
-  );
-};
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const isUp = data.close >= data.open;
-    const colorClass = isUp ? 'text-emerald-400' : 'text-rose-400';
-    
-    return (
-      <div className="bg-gray-900 border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-        <p className="text-gray-400 mb-2">{label}</p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <span className="text-gray-500">O:</span>
-          <span className="text-white font-mono">{data.open.toFixed(1)}</span>
-          <span className="text-gray-500">H:</span>
-          <span className="text-white font-mono">{data.high.toFixed(1)}</span>
-          <span className="text-gray-500">L:</span>
-          <span className="text-white font-mono">{data.low.toFixed(1)}</span>
-          <span className="text-gray-500">C:</span>
-          <span className={`font-mono ${colorClass}`}>{data.close.toFixed(1)}</span>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
+import React, { useState, useEffect, useRef } from 'react';
+import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickSeries } from 'lightweight-charts';
 
 export const BtcKlineChart: React.FC = () => {
-  const [data, setData] = useState<KlineData[]>([]);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+
   const [interval, setInterval] = useState<string>('1h');
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -73,32 +17,96 @@ export const BtcKlineChart: React.FC = () => {
     { label: '7d', value: '1w' },
   ];
 
+  // Initialize chart
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#9ca3af', // gray-400
+      },
+      grid: {
+        vertLines: { color: '#334155', style: 3 }, // dashed gray-700
+        horzLines: { color: '#334155', style: 3 },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        borderColor: '#475569',
+      },
+      rightPriceScale: {
+        borderColor: '#475569',
+        autoScale: true,
+      },
+      crosshair: {
+        mode: 1, // Normal mode
+        vertLine: {
+          color: '#64748b',
+          width: 1,
+          style: 3,
+          labelBackgroundColor: '#1e293b',
+        },
+        horzLine: {
+          color: '#64748b',
+          width: 1,
+          style: 3,
+          labelBackgroundColor: '#1e293b',
+        },
+      },
+    });
+
+    const series = chart.addSeries(CandlestickSeries, {
+      upColor: '#10b981',
+      downColor: '#f43f5e',
+      borderVisible: false,
+      wickUpColor: '#10b981',
+      wickDownColor: '#f43f5e',
+    });
+
+    chartRef.current = chart;
+    seriesRef.current = series;
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // Initial size setup after a tiny delay to ensure container is fully rendered
+    setTimeout(handleResize, 50);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, []);
+
+  // Fetch and update data
   useEffect(() => {
     const fetchKlines = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=100`);
+        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=1000`);
         const json = await response.json();
         
-        const formattedData = json.map((d: any) => {
-          const date = new Date(d[0]);
-          let timeLabel = '';
-          if (interval === '1d' || interval === '1w') {
-            timeLabel = `${date.getMonth() + 1}/${date.getDate()}`;
-          } else {
-            timeLabel = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-          }
-
-          return {
-            time: timeLabel,
-            open: parseFloat(d[1]),
-            high: parseFloat(d[2]),
-            low: parseFloat(d[3]),
-            close: parseFloat(d[4]),
-          };
-        });
+        const formattedData = json.map((d: any) => ({
+          time: d[0] / 1000, // Unix timestamp in seconds
+          open: parseFloat(d[1]),
+          high: parseFloat(d[2]),
+          low: parseFloat(d[3]),
+          close: parseFloat(d[4]),
+        }));
         
-        setData(formattedData);
+        if (seriesRef.current) {
+          seriesRef.current.setData(formattedData);
+          chartRef.current?.timeScale().fitContent();
+        }
       } catch (error) {
         console.error('Error fetching klines:', error);
       } finally {
@@ -108,11 +116,6 @@ export const BtcKlineChart: React.FC = () => {
 
     fetchKlines();
   }, [interval]);
-
-  // Calculate domain for Y axis to give some padding
-  const minLow = Math.min(...data.map(d => d.low));
-  const maxHigh = Math.max(...data.map(d => d.high));
-  const padding = (maxHigh - minLow) * 0.1;
 
   return (
     <div className="w-full h-full flex flex-col relative">
@@ -132,36 +135,17 @@ export const BtcKlineChart: React.FC = () => {
         ))}
       </div>
       
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center">
+      {loading && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-900/20 backdrop-blur-[1px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
-      ) : (
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-            <XAxis 
-              dataKey="time" 
-              stroke="#666" 
-              tick={{ fill: '#888', fontSize: 11 }}
-              minTickGap={30}
-            />
-            <YAxis 
-              domain={[minLow - padding, maxHigh + padding]} 
-              stroke="#666" 
-              tick={{ fill: '#888', fontSize: 11 }}
-              tickFormatter={(val) => `$${val.toLocaleString()}`}
-              orientation="right"
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#222', opacity: 0.5 }} />
-            <Bar 
-              dataKey={(d) => [d.open, d.close]} 
-              shape={<Candlestick />} 
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
       )}
+      
+      <div 
+        ref={chartContainerRef} 
+        className="flex-1 w-full h-full" 
+        style={{ cursor: 'crosshair', pointerEvents: loading ? 'none' : 'auto' }}
+      />
     </div>
   );
 };

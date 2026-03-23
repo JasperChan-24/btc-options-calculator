@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OptionLeg } from './utils/blackScholes';
+import { OptionLeg, Denomination } from './utils/blackScholes';
 import { OptionLegEditor } from './components/OptionLegEditor';
 import { PayoffChart } from './components/PayoffChart';
 import { GreeksSummary } from './components/GreeksSummary';
@@ -9,7 +9,7 @@ import { TutorialPanel } from './components/TutorialPanel';
 import { OptionChain } from './components/OptionChain';
 import { SpotPosition } from './components/SpotPosition';
 import { BtcKlineChart } from './components/BtcKlineChart';
-import { Activity, Languages } from 'lucide-react';
+import { Activity, Languages, ArrowLeftRight } from 'lucide-react';
 import { Lang, t } from './i18n';
 
 export default function App() {
@@ -22,8 +22,24 @@ export default function App() {
   const [riskFreeRate, setRiskFreeRate] = useState<number>(0.05);
   const [spotBtcAmount, setSpotBtcAmount] = useState<number>(0);
   const [spotBtcEntryPrice, setSpotBtcEntryPrice] = useState<number>(60000);
-  const [walletBalance, setWalletBalance] = useState<number>(10000);
+  const [denomination, setDenomination] = useState<Denomination>('USDT');
   const [activeChart, setActiveChart] = useState<'payoff' | 'kline'>('payoff');
+
+  const toggleDenomination = () => {
+    const newDenom = denomination === 'USDT' ? 'BTC' : 'USDT';
+    if (currentBtcPrice > 0) {
+      // Convert leg premiums
+      setLegs(legs.map(leg => ({
+        ...leg,
+        premium: newDenom === 'BTC' ? leg.premium / currentBtcPrice : leg.premium * currentBtcPrice,
+      })));
+      // Convert spot entry price
+      setSpotBtcEntryPrice(prev =>
+        newDenom === 'BTC' ? prev / currentBtcPrice : prev * currentBtcPrice
+      );
+    }
+    setDenomination(newDenom);
+  };
 
   const fetchBtcPrice = async () => {
     try {
@@ -86,13 +102,26 @@ export default function App() {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}
-            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-lg text-sm transition-colors border border-gray-700"
-          >
-            <Languages className="w-4 h-4" />
-            {lang === 'en' ? '中文' : 'English'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleDenomination}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors border ${
+                denomination === 'BTC'
+                  ? 'bg-orange-600/20 border-orange-500/50 text-orange-300 hover:bg-orange-600/30'
+                  : 'bg-emerald-600/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-600/30'
+              }`}
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+              {denomination === 'USDT' ? t[lang].usdtMode : t[lang].btcMode}
+            </button>
+            <button
+              onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}
+              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-lg text-sm transition-colors border border-gray-700"
+            >
+              <Languages className="w-4 h-4" />
+              {lang === 'en' ? '中文' : 'English'}
+            </button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start xl:items-stretch">
@@ -127,7 +156,7 @@ export default function App() {
                       priceRange={priceRange}
                       spotBtcAmount={spotBtcAmount}
                       spotBtcEntryPrice={spotBtcEntryPrice}
-                      walletBalance={walletBalance}
+                      denomination={denomination}
                       lang={lang}
                     />
                   ) : (
@@ -140,6 +169,7 @@ export default function App() {
             <OptionChain 
               lang={lang} 
               currentBtcPrice={currentBtcPrice} 
+              denomination={denomination}
               onAddLeg={(leg) => setLegs([...legs, leg])} 
             />
           </div>
@@ -152,6 +182,7 @@ export default function App() {
               volAdjustment={volAdjustment}
               riskFreeRate={riskFreeRate}
               spotBtcAmount={spotBtcAmount}
+              denomination={denomination}
               lang={lang}
             />
 
@@ -164,8 +195,7 @@ export default function App() {
               setVolAdjustment={setVolAdjustment}
               riskFreeRate={riskFreeRate}
               setRiskFreeRate={setRiskFreeRate}
-              walletBalance={walletBalance}
-              setWalletBalance={setWalletBalance}
+
               maxDays={maxDays}
               lang={lang}
               lastSyncTime={lastSyncTime}
@@ -177,10 +207,11 @@ export default function App() {
               setAmount={setSpotBtcAmount}
               entryPrice={spotBtcEntryPrice}
               setEntryPrice={setSpotBtcEntryPrice}
+              denomination={denomination}
               lang={lang}
             />
             
-            <OptionLegEditor legs={legs} onChange={setLegs} lang={lang} />
+            <OptionLegEditor legs={legs} onChange={setLegs} denomination={denomination} lang={lang} />
           </div>
         </div>
 

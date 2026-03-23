@@ -37,6 +37,7 @@ export function n(x: number): number {
 
 export type OptionType = 'Call' | 'Put';
 export type PositionType = 'Long' | 'Short';
+export type Denomination = 'USDT' | 'BTC';
 
 export interface OptionLeg {
   id: string;
@@ -149,63 +150,54 @@ export function calculateCurrentPnL(
   return leg.position === 'Long' ? profit * leg.quantity : -profit * leg.quantity;
 }
 
-/**
- * Binance Options Margin Calculation (Standard Margin)
- * Based on Binance rules for USDT-margined options.
- */
-export function calculateBinanceMargin(
-  S: number, // Spot Price
-  leg: OptionLeg,
-  currentPrice: number, // Mark Price (theoretical)
-  isMaintenance: boolean = false
+// ======================================================
+// BTC-denominated (inverse) option calculations
+// ======================================================
+
+// Expiration payoff in BTC: payoff(USD) / S
+export function calculateExpirationPayoffBTC(
+  S: number,
+  leg: OptionLeg
 ): number {
-  if (leg.position === 'Long') return 0;
-
-  const otm = leg.type === 'Call' 
-    ? Math.max(0, leg.strike - S) 
-    : Math.max(0, S - leg.strike);
-
-  if (isMaintenance) {
-    // Maintenance Margin = Mark Price + 0.075 * Spot Price
-    return (currentPrice + 0.075 * S) * leg.quantity;
+  let payoffBtc = 0;
+  if (leg.type === 'Call') {
+    payoffBtc = Math.max(0, S - leg.strike) / S;
   } else {
-    // Initial Margin = Mark Price + Max(0.15 * Spot Price - OTM, 0.1 * Spot Price)
-    const riskPremium = Math.max(0.15 * S - otm, 0.1 * S);
-    return (currentPrice + riskPremium) * leg.quantity;
+    payoffBtc = Math.max(0, leg.strike - S) / S;
   }
+
+  const profit = payoffBtc - leg.premium; // premium is already in BTC
+  return leg.position === 'Long' ? profit * leg.quantity : -profit * leg.quantity;
 }
 
-/**
- * Calculate total portfolio margin and equity
- */
-export function calculatePortfolioRisk(
+// Current theoretical PnL in BTC
+export function calculateCurrentPnLBTC(
   S: number,
-  legs: OptionLeg[],
+  leg: OptionLeg,
   daysPassed: number,
   volAdjustment: number,
+  r: number = 0.05
+): number {
+  const tRemaining = Math.max(0, leg.expirationDays - daysPassed) / 365;
+  const currentVol = Math.max(0.01, leg.impliedVol + volAdjustment);
+
+  const currentPriceUsd = blackScholesPrice(S, leg.strike, tRemaining, r, currentVol, leg.type);
+  const currentPriceBtc = currentPriceUsd / S;
+  const profit = currentPriceBtc - leg.premium; // premium is already in BTC
+
+  return leg.position === 'Long' ? profit * leg.quantity : -profit * leg.quantity;
+}
+
+// Greeks for BTC-denominated (inverse) options
+// OKX standard: To improve readability, major exchanges display standard USD-equivalent Greeks
+// instead of pure strict inverse derivatives (which result in unreadable 0.0000x values).
+export function calculateGreeksBTC(
+  S: number,
+  K: number,
+  t: number,
   r: number,
-  walletBalance: number = 0
+  v: number,
+  type: OptionType
 ) {
-  let totalIM = 0;
-  let totalMM = 0;
-  let totalUnrealizedPnL = 0;
-
-  legs.forEach(leg => {
-    const tRemaining = Math.max(0, leg.expirationDays - daysPassed) / 365;
-    const currentVol = Math.max(0.01, leg.impliedVol + volAdjustment);
-    const markPrice = blackScholesPrice(S, leg.strike, tRemaining, r, currentVol, leg.type);
-    
-    if (leg.position === 'Short') {
-      totalIM += calculateBinanceMargin(S, leg, markPrice, false);
-      totalMM += calculateBinanceMargin(S, leg, markPrice, true);
-      totalUnrealizedPnL += (leg.premium - markPrice) * leg.quantity;
-    } else {
-      totalUnrealizedPnL += (markPrice - leg.premium) * leg.quantity;
-    }
-  });
-
-  const equity = walletBalance + totalUnrealizedPnL;
-  const marginRatio = totalMM > 0 ? (equity / totalMM) : Infinity;
-
-  return { totalIM, totalMM, equity, marginRatio };
+  return calculateGreeks(S, K, t, r, v, type);
 }

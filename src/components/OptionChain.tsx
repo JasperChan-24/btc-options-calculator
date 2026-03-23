@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { OptionLeg } from '../utils/blackScholes';
+import { OptionLeg, Denomination } from '../utils/blackScholes';
 import { Lang, t } from '../i18n';
 import { Table, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -26,9 +26,10 @@ interface OptionChainProps {
   onAddLeg: (leg: OptionLeg) => void;
   lang: Lang;
   currentBtcPrice: number;
+  denomination: Denomination;
 }
 
-export const OptionChain: React.FC<OptionChainProps> = ({ onAddLeg, lang, currentBtcPrice }) => {
+export const OptionChain: React.FC<OptionChainProps> = ({ onAddLeg, lang, currentBtcPrice, denomination }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<OptionData[]>([]);
@@ -122,6 +123,7 @@ export const OptionChain: React.FC<OptionChainProps> = ({ onAddLeg, lang, curren
 
   const handleAddLeg = (opt: OptionData, position: 'Long' | 'Short') => {
     const premium = position === 'Long' ? (opt.ask || opt.mark) : (opt.bid || opt.mark);
+    const convertedPremium = denomination === 'BTC' ? premium / currentBtcPrice : premium;
     onAddLeg({
       id: Math.random().toString(36).substr(2, 9),
       type: opt.type,
@@ -130,7 +132,7 @@ export const OptionChain: React.FC<OptionChainProps> = ({ onAddLeg, lang, curren
       expirationDays: Math.round(opt.daysToExpiry),
       impliedVol: opt.iv,
       quantity: 1,
-      premium: premium
+      premium: convertedPremium
     });
   };
 
@@ -199,6 +201,11 @@ export const OptionChain: React.FC<OptionChainProps> = ({ onAddLeg, lang, curren
           </thead>
           <tbody className="divide-y divide-gray-800">
             {strikeRows.map((row) => {
+              const isBtc = denomination === 'BTC';
+              const fmtPrice = (v: number | undefined) => {
+                if (!v) return '-';
+                return isBtc ? (v / currentBtcPrice).toFixed(6) : v.toFixed(1);
+              };
               const isAtm = Math.abs(row.strike - currentBtcPrice) < 500;
               return (
                 <tr key={row.strike} className={`hover:bg-gray-700/50 transition-colors ${isAtm ? 'bg-blue-900/20' : ''}`}>
@@ -211,15 +218,15 @@ export const OptionChain: React.FC<OptionChainProps> = ({ onAddLeg, lang, curren
                     onClick={() => row.call && handleAddLeg(row.call, 'Short')}
                     title={t[lang].clickToShort}
                   >
-                    {row.call?.bid?.toFixed(1) || '-'}
+                    {fmtPrice(row.call?.bid)}
                   </td>
-                  <td className="py-1 px-2 text-gray-300">{row.call?.mark?.toFixed(1) || '-'}</td>
+                  <td className="py-1 px-2 text-gray-300">{fmtPrice(row.call?.mark)}</td>
                   <td 
                     className="py-1 px-2 text-emerald-400/80 hover:text-emerald-300 hover:bg-gray-700 cursor-pointer"
                     onClick={() => row.call && handleAddLeg(row.call, 'Long')}
                     title={t[lang].clickToLong}
                   >
-                    {row.call?.ask?.toFixed(1) || '-'}
+                    {fmtPrice(row.call?.ask)}
                   </td>
 
                   {/* Strike */}
@@ -233,15 +240,15 @@ export const OptionChain: React.FC<OptionChainProps> = ({ onAddLeg, lang, curren
                     onClick={() => row.put && handleAddLeg(row.put, 'Long')}
                     title={t[lang].clickToLong}
                   >
-                    {row.put?.ask?.toFixed(1) || '-'}
+                    {fmtPrice(row.put?.ask)}
                   </td>
-                  <td className="py-1 px-2 text-gray-300">{row.put?.mark?.toFixed(1) || '-'}</td>
+                  <td className="py-1 px-2 text-gray-300">{fmtPrice(row.put?.mark)}</td>
                   <td 
                     className="py-1 px-2 text-rose-400/80 hover:text-rose-300 hover:bg-gray-700 cursor-pointer"
                     onClick={() => row.put && handleAddLeg(row.put, 'Short')}
                     title={t[lang].clickToShort}
                   >
-                    {row.put?.bid?.toFixed(1) || '-'}
+                    {fmtPrice(row.put?.bid)}
                   </td>
                   <td className="py-1 px-2 text-gray-400 hidden sm:table-cell">
                     {row.put?.iv ? `${(row.put.iv * 100).toFixed(1)}%` : '-'}

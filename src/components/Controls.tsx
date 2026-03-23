@@ -12,8 +12,7 @@ interface ControlsProps {
   riskFreeRate: number;
   setRiskFreeRate: (val: number) => void;
   maxDays: number;
-  walletBalance: number;
-  setWalletBalance: (val: number) => void;
+
   lang: Lang;
   lastSyncTime?: Date | null;
   onRefreshPrice?: () => void;
@@ -29,8 +28,7 @@ export const Controls: React.FC<ControlsProps> = ({
   riskFreeRate,
   setRiskFreeRate,
   maxDays,
-  walletBalance,
-  setWalletBalance,
+
   lang,
   lastSyncTime,
   onRefreshPrice,
@@ -72,20 +70,7 @@ export const Controls: React.FC<ControlsProps> = ({
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-300 mb-1">
-            {t[lang].walletBalance}: ${walletBalance.toLocaleString()}
-          </label>
-          <input
-            type="number"
-            value={walletBalance}
-            onChange={(e) => setWalletBalance(Number(e.target.value))}
-            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500"
-          />
-          <div className="mt-1.5 text-[10px] text-gray-400">
-            {t[lang].initialMargin} simulation
-          </div>
-        </div>
+
 
         <div>
           <label className="block text-xs font-medium text-gray-300 mb-1">

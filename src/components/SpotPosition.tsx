@@ -1,5 +1,6 @@
 import React from 'react';
 import { Lang, t } from '../i18n';
+import { Denomination } from '../utils/blackScholes';
 import { Wallet } from 'lucide-react';
 
 interface SpotPositionProps {
@@ -7,10 +8,11 @@ interface SpotPositionProps {
   setAmount: (a: number) => void;
   entryPrice: number;
   setEntryPrice: (p: number) => void;
+  denomination: Denomination;
   lang: Lang;
 }
 
-export const SpotPosition: React.FC<SpotPositionProps> = ({ amount, setAmount, entryPrice, setEntryPrice, lang }) => {
+export const SpotPosition: React.FC<SpotPositionProps> = ({ amount, setAmount, entryPrice, setEntryPrice, denomination, lang }) => {
   return (
     <div className="bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700">
       <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -29,7 +31,7 @@ export const SpotPosition: React.FC<SpotPositionProps> = ({ amount, setAmount, e
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">{t[lang].entryPrice}</label>
+          <label className="block text-sm text-gray-400 mb-1">{denomination === 'BTC' ? t[lang].entryPriceBtc : t[lang].entryPrice}</label>
           <input
             type="number"
             value={entryPrice}
