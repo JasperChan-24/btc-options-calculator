@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import {
   createChart,
   ColorType,
@@ -29,6 +29,7 @@ interface PayoffChartProps {
   spotBtcAmount: number;
   spotBtcEntryPrice: number;
   denomination: Denomination;
+  pnlUnit: 'BTC' | 'USDT';
   lang: Lang;
 }
 
@@ -42,9 +43,12 @@ export const PayoffChart: React.FC<PayoffChartProps> = ({
   spotBtcAmount,
   spotBtcEntryPrice,
   denomination,
+  pnlUnit,
   lang,
 }) => {
   const isBtc = denomination === 'BTC';
+  const displayBtc = isBtc && pnlUnit === 'BTC';
+  const unit = displayBtc ? '₿' : '$';
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
@@ -82,14 +86,20 @@ export const PayoffChart: React.FC<PayoffChartProps> = ({
         }
       });
 
+      // If in BTC mode but displaying as USDT, multiply the BTC PnL by the X-axis price (S)
+      if (isBtc && pnlUnit === 'USDT') {
+        expirationPnL *= S;
+        currentPnL *= S;
+      }
+
       const timeVal = Math.round(S) as any;
       
-      expData.push({ time: timeVal, value: isBtc ? parseFloat(expirationPnL.toFixed(6)) : Math.round(expirationPnL) });
-      curData.push({ time: timeVal, value: isBtc ? parseFloat(currentPnL.toFixed(6)) : Math.round(currentPnL) });
+      expData.push({ time: timeVal, value: displayBtc ? parseFloat(expirationPnL.toFixed(6)) : Math.round(expirationPnL) });
+      curData.push({ time: timeVal, value: displayBtc ? parseFloat(currentPnL.toFixed(6)) : Math.round(currentPnL) });
       zeroData.push({ time: timeVal, value: 0 });
     }
     return { expData, curData, zeroData };
-  }, [legs, daysPassed, volAdjustment, riskFreeRate, priceRange, spotBtcAmount, spotBtcEntryPrice, isBtc]);
+  }, [legs, daysPassed, volAdjustment, riskFreeRate, priceRange, spotBtcAmount, spotBtcEntryPrice, isBtc, pnlUnit]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -110,7 +120,7 @@ export const PayoffChart: React.FC<PayoffChartProps> = ({
       },
       localization: {
         timeFormatter: (time: number) => t[lang].btcPrice + ': $' + time.toLocaleString(),
-        priceFormatter: (price: number) => isBtc ? price.toFixed(4) + ' ₿' : '$' + price.toLocaleString(),
+        priceFormatter: (price: number) => displayBtc ? price.toFixed(4) + ' ₿' : '$' + price.toLocaleString(),
       },
       rightPriceScale: {
         borderColor: '#475569',
@@ -172,7 +182,7 @@ export const PayoffChart: React.FC<PayoffChartProps> = ({
       const curValue = param.seriesData.get(curSeries) as { value: number };
       
       if (expValue && curValue) {
-        const formatPnl = (v: number) => isBtc ? v.toFixed(4) + ' ₿' : '$' + v.toLocaleString();
+        const formatPnl = (v: number) => displayBtc ? v.toFixed(4) + ' ₿' : '$' + v.toLocaleString();
         legendRef.current.innerHTML = '<div style="color: #10b981">● ' + t[lang].expirationPnl + ': ' + formatPnl(expValue.value) + '</div><div style="color: #f59e0b">● ' + t[lang].currentPnl + ': ' + formatPnl(curValue.value) + '</div>';
       }
     });
@@ -193,7 +203,7 @@ export const PayoffChart: React.FC<PayoffChartProps> = ({
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [lang, isBtc]);
+  }, [lang, isBtc, displayBtc]);
 
   useEffect(() => {
     if (zeroLineRef.current && expSeriesRef.current && curSeriesRef.current && chartRef.current) {
@@ -228,6 +238,7 @@ export const PayoffChart: React.FC<PayoffChartProps> = ({
         <div style={{ color: '#10b981' }}>● {t[lang].expirationPnl}</div>
         <div style={{ color: '#f59e0b' }}>● {t[lang].currentPnl}</div>
       </div>
+
       <button
         onClick={handleResetZoom}
         className="absolute top-2 right-12 z-10 flex items-center gap-1 bg-gray-800/90 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs transition-opacity opacity-0 group-hover:opacity-100 border border-gray-600 cursor-pointer"

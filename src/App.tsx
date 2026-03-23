@@ -24,6 +24,12 @@ export default function App() {
   const [spotBtcEntryPrice, setSpotBtcEntryPrice] = useState<number>(60000);
   const [denomination, setDenomination] = useState<Denomination>('USDT');
   const [activeChart, setActiveChart] = useState<'payoff' | 'kline'>('payoff');
+  const [pnlUnit, setPnlUnit] = useState<'BTC' | 'USDT'>('BTC');
+
+  // Sync pnlUnit with denomination for better UX
+  useEffect(() => {
+    setPnlUnit(denomination === 'BTC' ? 'BTC' : 'USDT');
+  }, [denomination]);
 
   const toggleDenomination = () => {
     const newDenom = denomination === 'USDT' ? 'BTC' : 'USDT';
@@ -142,6 +148,27 @@ export default function App() {
                     {t[lang].btcChart}
                   </button>
                 </div>
+
+                {activeChart === 'payoff' && denomination === 'BTC' && (
+                  <div className="flex bg-gray-900 rounded-lg p-1 border border-gray-700/50">
+                    <button
+                      onClick={() => setPnlUnit('BTC')}
+                      className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                        pnlUnit === 'BTC' ? 'bg-orange-500/20 text-orange-400 font-medium' : 'text-gray-400 hover:text-gray-200'
+                      }`}
+                    >
+                      {t[lang].pnlInBtc}
+                    </button>
+                    <button
+                      onClick={() => setPnlUnit('USDT')}
+                      className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                        pnlUnit === 'USDT' ? 'bg-blue-500/20 text-blue-400 font-medium' : 'text-gray-400 hover:text-gray-200'
+                      }`}
+                    >
+                      {t[lang].pnlInUsdt}
+                    </button>
+                  </div>
+                )}
               </div>
               
               <div className="flex-1 relative min-h-[320px] w-full">
@@ -157,6 +184,7 @@ export default function App() {
                       spotBtcAmount={spotBtcAmount}
                       spotBtcEntryPrice={spotBtcEntryPrice}
                       denomination={denomination}
+                      pnlUnit={pnlUnit}
                       lang={lang}
                     />
                   ) : (
