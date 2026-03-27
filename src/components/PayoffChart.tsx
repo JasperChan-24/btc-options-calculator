@@ -217,7 +217,7 @@ export const PayoffChart: React.FC<PayoffChartProps> = ({
         to: priceRange[1] as any 
       });
     }
-  }, [chartData, priceRange]);
+  }, [chartData, priceRange, lang, isBtc, displayBtc]);
 
   const handleResetZoom = () => {
     if (chartRef.current) {
