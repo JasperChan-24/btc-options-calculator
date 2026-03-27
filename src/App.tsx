@@ -13,16 +13,34 @@ import { Activity, Languages, ArrowLeftRight } from 'lucide-react';
 import { Lang, t } from './i18n';
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>('en');
-  const [legs, setLegs] = useState<OptionLeg[]>([]);
+  // Caching: Key for localStorage
+  const CACHE_KEY = 'btc_options_calculator_settings';
+  
+  // Helper to load cached state
+  const getCached = () => {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        console.error('Failed to parse cached settings:', e);
+      }
+    }
+    return null;
+  };
+
+  const cachedData = getCached();
+
+  const [lang, setLang] = useState<Lang>(cachedData?.lang || 'en');
+  const [legs, setLegs] = useState<OptionLeg[]>(cachedData?.legs || []);
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number>(60000);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [daysPassed, setDaysPassed] = useState<number>(0);
-  const [volAdjustment, setVolAdjustment] = useState<number>(0);
-  const [riskFreeRate, setRiskFreeRate] = useState<number>(0.05);
-  const [spotBtcAmount, setSpotBtcAmount] = useState<number>(0);
-  const [spotBtcEntryPrice, setSpotBtcEntryPrice] = useState<number>(60000);
-  const [denomination, setDenomination] = useState<Denomination>('USDT');
+  const [volAdjustment, setVolAdjustment] = useState<number>(cachedData?.volAdjustment ?? 0);
+  const [riskFreeRate, setRiskFreeRate] = useState<number>(cachedData?.riskFreeRate ?? 0.05);
+  const [spotBtcAmount, setSpotBtcAmount] = useState<number>(cachedData?.spotBtcAmount ?? 0);
+  const [spotBtcEntryPrice, setSpotBtcEntryPrice] = useState<number>(cachedData?.spotBtcEntryPrice ?? 60000);
+  const [denomination, setDenomination] = useState<Denomination>(cachedData?.denomination || 'USDT');
   const [activeChart, setActiveChart] = useState<'payoff' | 'kline'>('payoff');
   const [pnlUnit, setPnlUnit] = useState<'BTC' | 'USDT'>('BTC');
 
@@ -65,6 +83,20 @@ export default function App() {
       console.error('Error fetching BTC price:', error);
     }
   };
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    const stateToCache = {
+      legs,
+      lang,
+      spotBtcAmount,
+      spotBtcEntryPrice,
+      denomination,
+      volAdjustment,
+      riskFreeRate,
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(stateToCache));
+  }, [legs, lang, spotBtcAmount, spotBtcEntryPrice, denomination, volAdjustment, riskFreeRate]);
 
   useEffect(() => {
     fetchBtcPrice();
